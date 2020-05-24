@@ -1,30 +1,38 @@
 
 update.packages()
 
+if (!require(igraph)) install.packages("igraph")
 if (!require(ggplot2)) install.packages("ggplot2")
 if (!require(dplyr)) install.packages("dplyr")
-if (!require(networkR)) install.packages("networkR")
+
+
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
-BiocManager::install(version = "3.10")
+BiocManager::install(version = "3.11")
+BiocManager::install("graph")
+BiocManager::install("RBGL")
 
 source("http://bioconductor.org/biocLite.R") 
 biocLite("graph")
 
-
 library(igraph)
 library(ggplot2)
 library(dplyr)
-library(networkR)
+# library(networkR)
 library(graph)
+library(RBGL)
 
 
 print(getwd())
 
 # Read files
-allPositions <- read.csv("data/sna_positions_all.csv", header = T)
 positions <- read.csv("data/sna_positions.csv", header = T)
 relations <- read.csv("data/sna_edges.csv", header = T)
+
+# Construct the network
+nodes <- data.frame(positions[, 1])
+edges <- data.frame(from = relations[, 1], to = relations[, 2])
+net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 
 # Basic info of dataset
 str(positions)
@@ -41,12 +49,8 @@ summary(positions)
 # plot(allPositions$seniorityLevel)
 # dev.off()
 
-# Plot the network
-nodes <- data.frame(positions[, 1])
-edges <- data.frame(from = relations[, 1], to = relations[, 2])
-net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 # plot(net)
-plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6, main = "SNA")
+plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6)
 
 
 # =============================Structural Analysis==============================
@@ -54,11 +58,13 @@ plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6, main = "SNA")
 deg <- degree(net, mode="all")
 deg_dataframe <- as.data.frame(deg)
 deg_dataframe$node <- row.names(deg_dataframe)
-top10_nodes_degree <- deg_dataframe %>% select(node, deg) %>% arrange(desc(deg)) %>% head(10)
+top10_nodes_degree <- deg_dataframe %>% select(node, deg) %>%
+    arrange(desc(deg)) %>% head(10)
 top10_nodes_degree
 
 # Plot node degree distribution
-ggplot(data = top10_nodes_degree, aes(x = reorder(node, deg), y = deg)) + geom_histogram(stat = "identity") + coord_flip()
+ggplot(data = top10_nodes_degree, aes(x = reorder(node, deg), y = deg)) +
+    geom_histogram(stat = "identity") + coord_flip()
 
 # Degree centrality
 edge_density(net)
@@ -109,7 +115,7 @@ length(clv) # number of communities
 membership(clv) # community membership for each node
 modularity(clv) # how modular the graph partitioning is
 crossing(clv, net)
-plot(clv, net,vertex.label.cex=0.5, vertex.size=10, main="CLV")
+plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
 
 
 # =============================Link Analysis===================================
@@ -133,13 +139,12 @@ plot(as.undirected(net2), vertex.color=vcol)
 
 
 # =============================Proximity Mearsure==============================
-adj<-as.matrix(get.adjacency(net))
-g<-graph.adjacency(adj)
-plot(g,edge.arrow.size=.1)
+adj <- as.matrix(get.adjacency(net))
+g <- graph.adjacency(adj)
+plot(g, edge.arrow.size = .1)
 source("SNN_GRAPH.R") 
-SNN_output<-SNN_GRAPH(adj,2)
+SNN_output <- SNN_GRAPH(adj, 2)
 SNN_output
-SNN_output_ <- as.data.frame(SNN_output[[2]])
 
 
 # =============================Graph Cluster Analysis==============================
@@ -156,7 +161,18 @@ source("maximalCliqueEnumerator.R")
 maximalCliqueEnumerator(net)
 
 # Graph cluster by k-means
-lapKern = laplacedot(sigma = 1)
-K = kernelMatrix(lapKern,adj)
-kmeans(K, 3)
+# lapKern = laplacedot(sigma = 1)
+# K = kernelMatrix(lapKern,adj)
+# kmeans(K, 3)
 
+
+# =============================All Data==============================
+if (!require(RMySQL)) install.packages("RMySQL")
+library("RMySQL");
+
+# Create a connection Object to MySQL database.
+mysqlconnection = dbConnect(MySQL(), user = 'root', password = '', dbname = 'linkedin', host = 'iat.net.cn')
+result = dbSendQuery(mysqlconnection, "select `id` from social_positions")
+
+allPositions = fetch(result, -1)
+nrow(allPositions)
