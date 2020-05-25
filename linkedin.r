@@ -191,13 +191,16 @@ source("maximalCliqueEnumerator.R")
 maximalCliqueEnumerator(net)
 
 # Graph cluster by k-means
-install.packages("kernlab")
 library("kernlab")
 lapKern = laplacedot(sigma = 1)
-K = kernelMatrix(lapKern,adj)
-cluster = kmeans(K, 3)
-class(cluster)
-length(cluster)
+adj <- as.matrix(get.adjacency(net))
+K = kernelMatrix(lapKern, adj)
+kmeans(K, 3)
+
+# Graph cluster by HCS
+source("HCSClustering.R")
+HCSClustering(net, kappa=2)
+
 
 # =============================All Data==============================
 if (!require(RMySQL)) install.packages("RMySQL")
@@ -209,3 +212,42 @@ result = dbSendQuery(mysqlconnection, "select `id` from social_positions")
 
 allPositions = fetch(result, -1)
 nrow(allPositions)
+
+
+# =============================Frequent Skills==============================
+library(wordcloud2)
+library(wordcloud)
+library(dplyr)
+library(textfeatures)
+install.packages("webshot")
+library(webshot)
+webshot::install_phantomjs()
+webshot::install_phantomjs()
+
+# Read the position description
+description = readLines('data/position_description.txt')
+head(description)
+
+txt = description[description != ""]
+txt = tolower(txt)
+txtList = lapply(txt, strsplit, " ")
+txtChar = unlist(txtList)
+# clean symbol(.,!:;?)
+txtChar = gsub("\\.|,|\\!|:|;|\\?", "", txtChar)
+txtChar = txtChar[txtChar != ""]
+data = as.data.frame(table(txtChar))
+colnames(data) = c("Word", "freq")
+ordFreq = data[order(data$freq,decreasing=T),]
+
+# Filter the stopwords
+df = read.csv('data/stopwords.csv', header = T)
+Word = select(df,Word)
+antiWord = data.frame(Word,stringsAsFactors = F)
+# ordFreq - antiWord
+result = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq)) 
+
+
+result = result[1:50,]
+head(result,5)
+wordcloud(words=result$Word,freq=result$freq,scale=c(3,.5),col=rainbow(length(result$freq)))
+wordcloud2(data=result, size=1.5)
