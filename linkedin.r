@@ -5,7 +5,7 @@ if (!require(igraph)) install.packages("igraph")
 if (!require(ggplot2)) install.packages("ggplot2")
 if (!require(dplyr)) install.packages("dplyr")
 
-
+install.packages("sna")
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install(version = "3.11")
@@ -18,8 +18,9 @@ biocLite("graph")
 library(igraph)
 library(ggplot2)
 library(dplyr)
-# library(networkR)
 library(graph)
+library(networkR)
+library(sna)
 library(RBGL)
 
 
@@ -33,6 +34,8 @@ relations <- read.csv("data/sna_edges.csv", header = T)
 nodes <- data.frame(positions[, 1])
 edges <- data.frame(from = relations[, 1], to = relations[, 2])
 net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
+# plot(net)
+plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6)
 
 # Basic info of dataset
 str(positions)
@@ -49,13 +52,19 @@ summary(positions)
 # plot(allPositions$seniorityLevel)
 # dev.off()
 
-# plot(net)
-plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6)
-
 
 # =============================Structural Analysis==============================
+matrix = as.matrix(net)
+degree <- degree(graph.adjacency(matrix))
+
+gden(matrix)
+
+degree <- degree(net)
+closeness <- closeness(net)
+betweenness <- betweenness(net)
+
 # Node degree
-deg <- degree(net, mode="all")
+deg <- degree(net)
 deg_dataframe <- as.data.frame(deg)
 deg_dataframe$node <- row.names(deg_dataframe)
 top10_nodes_degree <- deg_dataframe %>% select(node, deg) %>%
@@ -109,6 +118,20 @@ plot( x=0:max(deg), y=1-deg.dist, pch=19, cex=1.2, col="orange",
 
 
 # =============================Community Detection==============================
+
+#Community detection
+#detection based on edge betweenness
+ceb <- cluster_edge_betweenness(net) 
+dendPlot(ceb, mode="hclust")
+plot(ceb, net2)
+length(ceb) #number of communities
+modularity(ceb) # how modular the graph partitioning is
+#detection based on  propagating labels
+clp <- cluster_label_prop(net) 
+plot(clp, net)
+length(clp) 
+modularity(clp)
+
 clv <- cluster_louvain(net)
 class(clv)
 length(clv) # number of communities
@@ -119,6 +142,7 @@ plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
 
 
 # =============================Link Analysis===================================
+connectedness(net)
 hub_score(net, weights=NA)$vector
 as <- authority_score(net, weights=NA)$vector
 par(mfrow=c(1,2)) 
@@ -150,7 +174,13 @@ SNN_output
 # =============================Graph Cluster Analysis==============================
 # Graph cluster by HCS
 source("HCSClustering.R")
-HCSClustering(net)
+HCSClustering(net, kappa=2)
+
+class(clv)
+length(clv) # number of communities
+membership(clv) # community membership for each node
+modularity(clv) # how modular the graph partitioning is
+crossing(clv, net)
 
 # Graph cluster by SNN
 source("SNN_Clustering.R")
@@ -161,10 +191,13 @@ source("maximalCliqueEnumerator.R")
 maximalCliqueEnumerator(net)
 
 # Graph cluster by k-means
-# lapKern = laplacedot(sigma = 1)
-# K = kernelMatrix(lapKern,adj)
-# kmeans(K, 3)
-
+install.packages("kernlab")
+library("kernlab")
+lapKern = laplacedot(sigma = 1)
+K = kernelMatrix(lapKern,adj)
+cluster = kmeans(K, 3)
+class(cluster)
+length(cluster)
 
 # =============================All Data==============================
 if (!require(RMySQL)) install.packages("RMySQL")
