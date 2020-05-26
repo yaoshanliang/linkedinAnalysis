@@ -35,7 +35,7 @@ nodes <- data.frame(positions[, 1])
 edges <- data.frame(from = relations[, 1], to = relations[, 2])
 net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 # plot(net)
-plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6)
+plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6, vertex.label.dist=5, vertex.color=rainbow(7,alpha=0.3))
 
 # Basic info of dataset
 str(positions)
@@ -54,14 +54,20 @@ summary(positions)
 
 
 # =============================Structural Analysis==============================
-matrix = as.matrix(net)
-degree <- degree(graph.adjacency(matrix))
+library(igraph)
+positions <- read.csv("data/sna_positions.csv", header = T)
+relations <- read.csv("data/sna_edges.csv", header = T)
 
-gden(matrix)
+# Construct the network
+nodes <- data.frame(positions[, 1])
+edges <- data.frame(from = relations[, 1], to = relations[, 2])
+net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 
+# Degree, closeness, betweenness
 degree <- degree(net)
 closeness <- closeness(net)
 betweenness <- betweenness(net)
+
 
 # Node degree
 deg <- degree(net)
@@ -141,38 +147,65 @@ modularity(clv) # how modular the graph partitioning is
 crossing(clv, net)
 plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
 
+ceb <- cluster_edge_betweenness(net) 
+plot(ceb,net)
+ceb$membership
+
+clp <- cluster_label_prop(net)
+plot(clp,net)
+
+
+
+cfg <- cluster_fast_greedy(net)
+plot(cfg,net)
+
+sping <- spinglass.community(net)
+
+plot(sping,g)
 
 # =============================Link Analysis===================================
+library(igraph)
+library(sna)
+positions <- read.csv("data/sna_positions.csv", header = T)
+relations <- read.csv("data/sna_edges.csv", header = T)
+
+# Construct the network
+nodes <- data.frame(positions[, 1])
+edges <- data.frame(from = relations[, 1], to = relations[, 2])
+net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
+
+# Density, connectedness
+# edge_density(net)
+gden(as.matrix(get.adjacency(net)))
 connectedness(as.matrix(get.adjacency(net)))
-hub_score(net, weights=NA)$vector
-as <- authority_score(net, weights=NA)$vector
-par(mfrow=c(1,2)) 
-plot(net, vertex.size=hs*50, main="Hubs",edge.arrow.size=.1)
-plot(net, vertex.size=as*30, main="Authorities",edge.arrow.size=.1)
-#get the PageRank
-page.rank(net)
-#get the HITS
-source("HITS.R")
-HITS(net,2)
-cliques(net) # list of cliques
-sapply(cliques(net), length) # clique sizes
-largest_cliques(net) #find the largest clique
-net2 <- as.undirected(net, mode= "collapse")
-vcol <- rep("grey80", vcount(net2)) 
-vcol[unlist(largest_cliques(net2))] <- "gold" 
-plot(as.undirected(net2), vertex.color=vcol)
 
-
-# =============================Proximity Mearsure==============================
-adj <- as.matrix(get.adjacency(net))
-g <- graph.adjacency(adj)
-plot(g, edge.arrow.size = .1)
-source("SNN_GRAPH.R") 
-SNN_output <- SNN_GRAPH(adj, 2)
-SNN_output
+ego95 = ego.extract(as.matrix(get.adjacency(net)), 95)
+ego43 = ego.extract(as.matrix(get.adjacency(net)), 43)
+ego42 = ego.extract(as.matrix(get.adjacency(net)), 42)
+ego81 = ego.extract(as.matrix(get.adjacency(net)), 81)
+ego74 = ego.extract(as.matrix(get.adjacency(net)), 74)
+gden(ego95)
+gden(ego43)
+gden(ego42)
+gden(ego81)
+gden(ego74)
+connectedness(ego95)
+connectedness(ego43)
+connectedness(ego42)
+connectedness(ego81)
+connectedness(ego74)
 
 
 # =============================Graph Cluster Analysis==============================
+library(igraph)
+positions <- read.csv("data/sna_positions.csv", header = T)
+relations <- read.csv("data/sna_edges.csv", header = T)
+
+# Construct the network
+nodes <- data.frame(positions[, 1])
+edges <- data.frame(from = relations[, 1], to = relations[, 2])
+net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
+
 # Graph cluster by HCS
 source("HCSClustering.R")
 HCSClustering(net, kappa=2)
@@ -219,10 +252,6 @@ nrow(allPositions)
 library(wordcloud2)
 library(dplyr)
 library(textfeatures)
-install.packages("webshot")
-library(webshot)
-webshot::install_phantomjs()
-webshot::install_phantomjs()
 
 # Read the position description
 description = readLines('data/position_description.txt')
