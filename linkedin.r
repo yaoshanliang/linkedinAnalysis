@@ -207,7 +207,7 @@ net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 
 # Graph cluster by HCS
 source("HCSClustering.R")
-HCSClustering(net, kappa=2)
+HCSClustering(net, kappa = 2)
 
 class(clv)
 length(clv) # number of communities
