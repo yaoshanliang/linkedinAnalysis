@@ -139,20 +139,19 @@ plot(clp, net)
 length(clp) 
 modularity(clp)
 
+
+# 1）Louvain method for community detection
 clv <- cluster_louvain(net)
-class(clv)
-length(clv) # number of communities
-membership(clv) # community membership for each node
-modularity(clv) # how modular the graph partitioning is
 crossing(clv, net)
 plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
 
+# 2）Community structure detection based on edge betweenness
 ceb <- cluster_edge_betweenness(net) 
-plot(ceb,net)
-ceb$membership
+plot(ceb, net)
 
+# 3）Community detection based on spread labels
 clp <- cluster_label_prop(net)
-plot(clp,net)
+plot(clp, net)
 
 
 
