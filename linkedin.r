@@ -79,6 +79,7 @@ ggplot(data = top10_nodes_degree, aes(x = reorder(node, deg), y = deg)) +
 edge_density(net)
 centr_degree(net, mode="all", normalized=T)
 
+
 # Closeness centrality
 closeness(net, mode="all", weights=NA) 
 centr_clo = centr_clo(net, mode="all", normalized=T)
@@ -142,7 +143,7 @@ plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
 
 
 # =============================Link Analysis===================================
-connectedness(net)
+connectedness(as.matrix(get.adjacency(net)))
 hub_score(net, weights=NA)$vector
 as <- authority_score(net, weights=NA)$vector
 par(mfrow=c(1,2)) 
@@ -216,7 +217,6 @@ nrow(allPositions)
 
 # =============================Frequent Skills==============================
 library(wordcloud2)
-library(wordcloud)
 library(dplyr)
 library(textfeatures)
 install.packages("webshot")
@@ -248,6 +248,5 @@ result = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq))
 
 
 result = result[1:50,]
-head(result,5)
-wordcloud(words=result$Word,freq=result$freq,scale=c(3,.5),col=rainbow(length(result$freq)))
-wordcloud2(data=result, size=1.5)
+head(result,20)
+wordcloud2(data=result, size=1)
