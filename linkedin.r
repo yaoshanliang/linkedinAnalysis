@@ -171,6 +171,8 @@ plot(clp, net, vertex.label.cex = 0.5, vertex.size = 10,
 
 # =============================Graph Cluster Analysis==============================
 library(igraph)
+library(RBGL)
+
 positions <- read.csv("data/sna_positions.csv", header = T)
 relations <- read.csv("data/sna_edges.csv", header = T)
 
@@ -180,8 +182,16 @@ edges <- data.frame(from = relations[, 1], to = relations[, 2])
 net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
 
 # Graph cluster by HCS
-source("HCSClustering.R")
+source("algorithm/HCSClustering.R")
 HCSClustering(net, kappa = 2)
+
+# Graph cluster by k-means
+library("kernlab")
+lapKern = laplacedot(sigma = 1)
+adj <- as.matrix(get.adjacency(net))
+K = kernelMatrix(lapKern, adj)
+kmeans(K, 3)
+
 
 class(clv)
 length(clv) # number of communities
@@ -190,19 +200,14 @@ modularity(clv) # how modular the graph partitioning is
 crossing(clv, net)
 
 # Graph cluster by SNN
-source("SNN_Clustering.R")
+source("algorithm/SNN_Clustering.R")
 SNN_Clustering(net, 2)
 
 # Graph cluster by maximalCliqueEnumerator
-source("maximalCliqueEnumerator.R")
-maximalCliqueEnumerator(net)
+source("algorithm/maximalCliqueEnumerator.R")
+maximalCliqueEnumerator(net, 3)
 
-# Graph cluster by k-means
-library("kernlab")
-lapKern = laplacedot(sigma = 1)
-adj <- as.matrix(get.adjacency(net))
-K = kernelMatrix(lapKern, adj)
-kmeans(K, 3)
+
 
 # Graph cluster by HCS
 source("HCSClustering.R")
