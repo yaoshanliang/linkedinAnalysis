@@ -23,8 +23,10 @@ library(networkR)
 library(sna)
 library(RBGL)
 
-
 print(getwd())
+
+
+library(igraph)
 
 # Read files
 positions <- read.csv("data/sna_positions.csv", header = T)
@@ -34,8 +36,11 @@ relations <- read.csv("data/sna_edges.csv", header = T)
 nodes <- data.frame(positions[, 1])
 edges <- data.frame(from = relations[, 1], to = relations[, 2])
 net <- graph_from_data_frame(edges, vertices = nodes, directed = FALSE)
-# plot(net)
-plot.igraph(net, vertex.size = 1, vertex.label.cex = 0.6, vertex.label.dist=5, vertex.color=rainbow(7,alpha=0.3))
+plot(net, vertex.label.cex = 0.5, vertex.size = 10,
+    main="Network visualization of the positions")
+    
+
+plot.igraph(net, vertex.label.cex = 0.5, vertex.size = 10)
 
 # Basic info of dataset
 str(positions)
@@ -44,14 +49,6 @@ attributes(positions)
 ncol(positions)
 nrow(positions)
 summary(positions)
-
-# Bar chart
-# png("1.png", width=1000, height=500)
-# # plot(allPositions$jobTitle)
-# # plot(allPositions$industry)
-# plot(allPositions$seniorityLevel)
-# dev.off()
-
 
 # =============================Structural Analysis==============================
 library(igraph)
@@ -122,46 +119,6 @@ deg.dist <- degree_distribution(net, cumulative=T, mode="all")
 plot( x=0:max(deg), y=1-deg.dist, pch=19, cex=1.2, col="orange", 
       xlab="Degree", ylab="Cumulative Frequency")
 
-
-
-# =============================Community Detection==============================
-
-#Community detection
-#detection based on edge betweenness
-ceb <- cluster_edge_betweenness(net) 
-dendPlot(ceb, mode="hclust")
-plot(ceb, net2)
-length(ceb) #number of communities
-modularity(ceb) # how modular the graph partitioning is
-#detection based on  propagating labels
-clp <- cluster_label_prop(net) 
-plot(clp, net)
-length(clp) 
-modularity(clp)
-
-
-# 1）Louvain method for community detection
-clv <- cluster_louvain(net)
-crossing(clv, net)
-plot(clv, net,vertex.label.cex = 0.5, vertex.size = 10)
-
-# 2）Community structure detection based on edge betweenness
-ceb <- cluster_edge_betweenness(net) 
-plot(ceb, net)
-
-# 3）Community detection based on spread labels
-clp <- cluster_label_prop(net)
-plot(clp, net)
-
-
-
-cfg <- cluster_fast_greedy(net)
-plot(cfg,net)
-
-sping <- spinglass.community(net)
-
-plot(sping,g)
-
 # =============================Link Analysis===================================
 library(igraph)
 library(sna)
@@ -193,6 +150,23 @@ connectedness(ego43)
 connectedness(ego42)
 connectedness(ego81)
 connectedness(ego74)
+
+# =============================Community Detection==============================
+# 1）Louvain method for community detection
+clv <- cluster_louvain(net)
+crossing(clv, net)
+plot(clv, net, vertex.label.cex = 0.5, vertex.size = 10,
+    main="Louvain method for community detection")
+
+# 2）Community detection based on edge betweenness
+ceb <- cluster_edge_betweenness(net) 
+plot(ceb, net, vertex.label.cex = 0.5, vertex.size = 10,
+    main="Community detection based on edge betweenness")
+
+# 3）Community detection based on spread labels
+clp <- cluster_label_prop(net)
+plot(clp, net, vertex.label.cex = 0.5, vertex.size = 10,
+    main="Community detection based on spread labels")
 
 
 # =============================Graph Cluster Analysis==============================
@@ -234,19 +208,6 @@ kmeans(K, 3)
 source("HCSClustering.R")
 HCSClustering(net, kappa=2)
 
-
-# =============================All Data==============================
-if (!require(RMySQL)) install.packages("RMySQL")
-library("RMySQL");
-
-# Create a connection Object to MySQL database.
-mysqlconnection = dbConnect(MySQL(), user = 'root', password = '', dbname = 'linkedin', host = 'iat.net.cn')
-result = dbSendQuery(mysqlconnection, "select `id` from social_positions")
-
-allPositions = fetch(result, -1)
-nrow(allPositions)
-
-
 # =============================Frequent Skills==============================
 library(wordcloud2)
 library(dplyr)
@@ -270,11 +231,24 @@ ordFreq = data[order(data$freq,decreasing=T),]
 # Filter the stopwords
 df = read.csv('data/stopwords.csv', header = T)
 Word = select(df,Word)
-antiWord = data.frame(Word,stringsAsFactors = F)
+antiWord = data.frame(Word, stringsAsFactors = F)
 # ordFreq - antiWord
-result = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq)) 
-
+result = anti_join(ordFreq, antiWord, by = "Word") %>% arrange(desc(freq)) 
 
 result = result[1:50,]
-head(result,20)
+head(result, 20)
+
+# Draw graph
 wordcloud2(data=result, size=1)
+
+# =============================All Data From database==============================
+if (!require(RMySQL)) install.packages("RMySQL")
+library("RMySQL");
+
+# Create a connection Object to MySQL database.
+mysqlconnection = dbConnect(MySQL(), user = 'root', password = '', dbname = 'linkedin', host = 'iat.net.cn')
+result = dbSendQuery(mysqlconnection, "select `id` from social_positions")
+
+allPositions = fetch(result, -1)
+nrow(allPositions)
+
